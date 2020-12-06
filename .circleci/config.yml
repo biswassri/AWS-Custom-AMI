@@ -1,0 +1,39 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/project
+    docker:
+      - image: circleci/node:8.17.0
+    steps:
+      - checkout
+      - run:
+          name: Install packages
+          command: sudo apt-get update && sudo apt-get install wget zip unzip -y
+      - run:
+          name: Install awscli
+          command: |
+            curl "https://awscli.amazonaws.com/awscli-exe-linux- x86_64.zip" -o "awscliv2.zip" 
+            unzip awscliv2.zip 
+            sudo ./aws/install 
+      - run:
+          name: Download packer
+          command: |
+            wget -q https://releases.hashicorp.com/packer/1.3.4/packer_1.3.4_linux_amd64.zip 
+            unzip packer*.zip  
+            chmod +x packer
+      - run: 
+          name: get current directory
+          command: pwd
+      - run:
+          name: Validate Packer Template
+          command: ./packer validate -var "source_ami=${source_ami}" ubuntu-ami.json
+      - run:
+          name: Build AMI
+          command: |
+            ./packer build \
+            -var "aws_region=${AWS_REGION}" \
+            -var "aws_access_key=${aws_access_key}" \
+            -var "aws_secret_key=${aws_secret_key}" \
+            -var "ami_users=${ami_users}" \
+            -var "source_ami=${source_ami}" \
+            ubuntu-ami.json
